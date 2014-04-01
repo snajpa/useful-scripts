@@ -1,7 +1,18 @@
 useful-scipts
 =============
 
+check-zfs-health: check ZFS setup health (detect weird behavior)
+
+example of use:
+```
+[root@node5.prg.vpsfree.cz]
+ ~ # ./check-zfs-health 
+Your ZFS setup is considered OK(0)
+```
+
+
 meminfo: memory info on vpsfree zfs systems
+
 example of use:
 ```
 [root@node3.prg.vpsfree.cz]
