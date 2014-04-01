@@ -1,7 +1,6 @@
 #!/bin/bash
 
-N_RUNS=4
-POOL_NAME="vz"
+N_RUNS=20
 
 E_DMU_RECLAIM_INCREASED=100
 E_DMU_RECLAIM_NOZERO=10
@@ -21,20 +20,26 @@ small_txgs=""
 small_txgs_count=0
 small_txgs_count_last=0
 
+pools="`zpool list -Ho name`"
 wait_no_lines=$(( $N_RUNS + 2))
-[ ! "`cat /proc/spl/kstat/zfs/$POOL_NAME/txgs | wc -l`" -ge $wait_no_lines ] &&
-	echo $N_RUNS > /sys/module/zfs/parameters/zfs_txg_history
 
-while [ ! "`cat /proc/spl/kstat/zfs/$POOL_NAME/txgs | wc -l`" -ge $wait_no_lines ]; do
-	echo "WAIT_FOR_TXG_LOG"
-	sleep 1;
+for pool in $pools; do
+	[ ! "`cat /proc/spl/kstat/zfs/$pool/txgs | wc -l`" -ge $wait_no_lines ] &&
+		echo $N_RUNS > /sys/module/zfs/parameters/zfs_txg_history &&
+		echo "WAIT_FOR_TXG_LOG($pool)"
+	
+	while [ ! "`cat /proc/spl/kstat/zfs/$pool/txgs | wc -l`" -ge $wait_no_lines ]; do
+		sleep 1;
+	done
 done
-
 
 dmu_tx_memory_reclaim_last=`cat /proc/spl/kstat/zfs/dmu_tx | \
 				awk '/dmu_tx_memory_reclaim/ { print $3; }'`
-small_txgs_count=`cat /proc/spl/kstat/zfs/$POOL_NAME/txgs | \
-				awk '$3 ~ /C/' | awk '$6 < 2048 { print $6; }' | wc -l`
+small_txgs_count_last=0
+for pool in $pools; do
+	small_txgs_count_last=$(( $small_txgs_count_last + `cat /proc/spl/kstat/zfs/$pool/txgs | \
+				awk '$3 ~ /C/' | awk '$6 < 2048 { print $6; }' | wc -l`))
+done
 
 for current_run in `seq 1 $N_RUNS`; do
 	dmu_tx_memory_reclaim=`cat /proc/spl/kstat/zfs/dmu_tx | \
@@ -52,8 +57,11 @@ for current_run in `seq 1 $N_RUNS`; do
 		dmu_tx_memory_reclaim_last=$dmu_tx_memory_reclaim
 	fi
 	
-	small_txgs_count=`cat /proc/spl/kstat/zfs/$POOL_NAME/txgs | \
-				awk '$3 ~ /C/' | awk '$6 < 2048 { print $6; }' | wc -l`
+	small_txgs_count=0
+	for pool in $pools; do
+		small_txgs_count=$(( $small_txgs_count + `cat /proc/spl/kstat/zfs/$pool/txgs | \
+					awk '$3 ~ /C/' | awk '$6 < 2048 { print $6; }' | wc -l`))
+	done
 	if [ "$small_txgs_count" -gt 0 ]; then
 
 		if [ "$small_txgs_count" -gt "$small_txgs_count_last" ]; then
