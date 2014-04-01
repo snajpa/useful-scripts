@@ -1,0 +1,90 @@
+#!/bin/bash
+
+N_RUNS=4
+POOL_NAME="vz"
+
+E_DMU_RECLAIM_INCREASED=100
+E_DMU_RECLAIM_NOZERO=10
+E_SMALL_TXGS_COUNT_INCREASED=100
+E_SMALL_TXGS_COUNT_NOTZERO=15
+
+zfs_health_score=$((		             0 ))
+zfs_health_threshold_ok=$((	$N_RUNS *  -12 ))
+zfs_health_threshold_onedge=$((	$N_RUNS *  -20 ))
+zfs_health_threshold_notok=$((	$N_RUNS *  -50 ))
+zfs_health_threshold_fucked=$((	$N_RUNS * -100 ))
+
+dmu_tx_memory_reclaim=0
+dmu_tx_memory_reclaim_last=0
+
+small_txgs=""
+small_txgs_count=0
+small_txgs_count_last=0
+
+echo "WAIT_FOR_TXG_LOG"
+echo $N_RUNS > /sys/module/zfs/parameters/zfs_txg_history
+wait_no_lines=$(( $N_RUNS + 2))
+while [ ! "`cat /proc/spl/kstat/zfs/$POOL_NAME/txgs | wc -l`" -ge $wait_no_lines ]; do
+	sleep 1;
+done
+
+
+dmu_tx_memory_reclaim_last=`cat /proc/spl/kstat/zfs/dmu_tx | \
+				awk '/dmu_tx_memory_reclaim/ { print $3; }'`
+small_txgs=`cat /proc/spl/kstat/zfs/$POOL_NAME/txgs | \
+				awk '$3 ~ /C/' | awk '$6 < 2048 { print $6; }'`
+small_txgs_count_last=`echo $small_txgs | wc -l`
+
+for current_run in `seq 1 $N_RUNS`; do
+	dmu_tx_memory_reclaim=`cat /proc/spl/kstat/zfs/dmu_tx | \
+				awk '/dmu_tx_memory_reclaim/ { print $3; }'`
+	if [ "$dmu_tx_memory_reclaim" -gt 0 ]; then
+
+		if [ "$dmu_tx_memory_reclaim" -gt "$dmu_tx_memory_reclaim_last" ]; then
+			echo "E_DMU_RECLAIM_INCREASED"
+			zfs_health_score=$(( $zfs_health_score - $E_DMU_RECLAIM_INCREASED ))
+		else 
+			echo "E_DMU_RECLAIM_NOTZERO"
+			zfs_health_score=$(( $zfs_health_score - $E_DMU_RECLAIM_NOTZERO ))
+		fi
+
+		dmu_tx_memory_reclaim_last=$dmu_tx_memory_reclaim
+	fi
+	
+	small_txgs=`cat /proc/spl/kstat/zfs/$POOL_NAME/txgs | \
+				awk '$3 ~ /C/' | awk '$6 < 2048 { print $6; }'`
+	small_txgs_count=`echo $small_txgs | wc -l`
+	if [ "$small_txgs_count" -gt 0 ]; then
+
+		if [ "$small_txgs_count" -gt "$small_txgs_count_last" ]; then
+			echo "E_SMALL_TXGS_COUNT_INCREASED"
+			zfs_health_score=$(( $zfs_health_score - $E_SMALL_TXGS_COUNT_INCREASED ))
+		else 
+			echo "E_SMALL_TXGS_COUNT_NOTZERO"
+			zfs_health_score=$(( $zfs_health_score - $E_SMALL_TXGS_COUNT_NOTZERO ))
+		fi
+
+		small_txgs_count_last=$small_txgs_count
+	fi
+done
+
+echo -en "Your ZFS setup is considered "
+if [ "$zfs_health_score" -ge "$zfs_health_threshold_ok" ]; then
+
+	[ "$zfs_health_score" -ge "$zfs_health_threshold_onedge" ] &&
+		echo -en "ON_EDGE"
+	[ "$zfs_health_score" -ge "$zfs_health_threshold_notok" ] &&
+		echo -en "NOT_OK"
+	[ "$zfs_health_score" -ge "$zfs_health_threshold_fucked" ] &&
+		echo -en "FUCKED"
+	
+else
+	echo -en "OK"
+fi;
+
+echo -en "($zfs_health_score)\n"
+
+[ "$zfs_health_score" -ge "$zfs_health_threshold_ok" ] &&
+	exit -1
+exit 0
+
