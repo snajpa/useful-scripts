@@ -1,6 +1,7 @@
 #!/bin/bash
 
 N_RUNS=20
+RUN_SLEEP=0.5
 
 E_DMU_RECLAIM_INCREASED=100
 E_DMU_RECLAIM_NOZERO=10
@@ -74,6 +75,8 @@ for current_run in `seq 1 $N_RUNS`; do
 
 		small_txgs_count_last=$small_txgs_count
 	fi
+	
+	sleep $RUN_SLEEP
 done
 
 echo -en "Your ZFS setup is considered "
