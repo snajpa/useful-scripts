@@ -17,7 +17,6 @@ zfs_health_threshold_fucked=$((	$N_RUNS * -100 ))
 dmu_tx_memory_reclaim=0
 dmu_tx_memory_reclaim_last=0
 
-small_txgs=""
 small_txgs_count=0
 small_txgs_count_last=0
 
