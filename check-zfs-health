@@ -21,19 +21,20 @@ small_txgs=""
 small_txgs_count=0
 small_txgs_count_last=0
 
-echo "WAIT_FOR_TXG_LOG"
-echo $N_RUNS > /sys/module/zfs/parameters/zfs_txg_history
 wait_no_lines=$(( $N_RUNS + 2))
+[ ! "`cat /proc/spl/kstat/zfs/$POOL_NAME/txgs | wc -l`" -ge $wait_no_lines ] &&
+	echo $N_RUNS > /sys/module/zfs/parameters/zfs_txg_history
+
 while [ ! "`cat /proc/spl/kstat/zfs/$POOL_NAME/txgs | wc -l`" -ge $wait_no_lines ]; do
+	echo "WAIT_FOR_TXG_LOG"
 	sleep 1;
 done
 
 
 dmu_tx_memory_reclaim_last=`cat /proc/spl/kstat/zfs/dmu_tx | \
 				awk '/dmu_tx_memory_reclaim/ { print $3; }'`
-small_txgs=`cat /proc/spl/kstat/zfs/$POOL_NAME/txgs | \
-				awk '$3 ~ /C/' | awk '$6 < 2048 { print $6; }'`
-small_txgs_count_last=`echo $small_txgs | wc -l`
+small_txgs_count=`cat /proc/spl/kstat/zfs/$POOL_NAME/txgs | \
+				awk '$3 ~ /C/' | awk '$6 < 2048 { print $6; }' | wc -l`
 
 for current_run in `seq 1 $N_RUNS`; do
 	dmu_tx_memory_reclaim=`cat /proc/spl/kstat/zfs/dmu_tx | \
@@ -51,9 +52,8 @@ for current_run in `seq 1 $N_RUNS`; do
 		dmu_tx_memory_reclaim_last=$dmu_tx_memory_reclaim
 	fi
 	
-	small_txgs=`cat /proc/spl/kstat/zfs/$POOL_NAME/txgs | \
-				awk '$3 ~ /C/' | awk '$6 < 2048 { print $6; }'`
-	small_txgs_count=`echo $small_txgs | wc -l`
+	small_txgs_count=`cat /proc/spl/kstat/zfs/$POOL_NAME/txgs | \
+				awk '$3 ~ /C/' | awk '$6 < 2048 { print $6; }' | wc -l`
 	if [ "$small_txgs_count" -gt 0 ]; then
 
 		if [ "$small_txgs_count" -gt "$small_txgs_count_last" ]; then
@@ -69,13 +69,13 @@ for current_run in `seq 1 $N_RUNS`; do
 done
 
 echo -en "Your ZFS setup is considered "
-if [ "$zfs_health_score" -ge "$zfs_health_threshold_ok" ]; then
+if [ "$zfs_health_score" -lt "$zfs_health_threshold_ok" ]; then
 
-	[ "$zfs_health_score" -ge "$zfs_health_threshold_onedge" ] &&
+	[ "$zfs_health_score" -le "$zfs_health_threshold_onedge" ] &&
 		echo -en "ON_EDGE"
-	[ "$zfs_health_score" -ge "$zfs_health_threshold_notok" ] &&
+	[ "$zfs_health_score" -le "$zfs_health_threshold_notok" ] &&
 		echo -en "NOT_OK"
-	[ "$zfs_health_score" -ge "$zfs_health_threshold_fucked" ] &&
+	[ "$zfs_health_score" -le "$zfs_health_threshold_fucked" ] &&
 		echo -en "FUCKED"
 	
 else
