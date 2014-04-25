@@ -1,38 +1,57 @@
 #!/bin/bash
 
-mem_total=$((`cat /proc/meminfo | awk '/^MemTotal/ { print $2; }'`/1024))
-mem_free=$((`cat /proc/meminfo | awk '/^MemFree/ { print $2; }'`/1024))
-swap_free=$((`cat /proc/meminfo | awk '/^SwapFree/ { print $2; }'`/1024))
-swap_total=$((`cat /proc/meminfo | awk '/^SwapTotal/ { print $2; }'`/1024))
+case "$1" in
 
-arc_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^size/ { print $3; }'`/1024/1024))
-arc_mfu_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mfu_size/ { print $3; }'`/1024/1024))
-arc_mfu_ghost_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mfu_ghost_size/ { print $3; }'`/1024/1024))
-arc_mru_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mru_size/ { print $3; }'`/1024/1024))
-arc_mru_ghost_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mru_ghost_size/ { print $3; }'`/1024/1024))
+-g)
+	UNITS_DIV="/1024/1024"
+	UNITS="GB"
+	;;
+-m)
+	UNITS_DIV="/1024"
+	UNITS="MB"
+	;;
+-k)
+	UNITS_DIV=""
+	UNITS="kB"
+	;;
+*)
+	UNITS_DIV="/1024"
+	UNITS="MB"
+esac
 
-slab_size=$((`cat /proc/meminfo | awk '/^Slab/ { print $2; }'`/1024))
-dcache_size=$((`cat /proc/meminfo | awk '/^Cached/ { print $2; }'`/1024))
-swapcache_size=$((`cat /proc/meminfo | awk '/^SwapCached/ { print $2; }'`/1024))
-buffers_size=$((`cat /proc/meminfo | awk '/^Buffers/ { print $2; }'`/1024))
+mem_total=$((`cat /proc/meminfo | awk '/^MemTotal/ { print $2; }'`$UNITS_DIV))
+mem_free=$((`cat /proc/meminfo | awk '/^MemFree/ { print $2; }'`$UNITS_DIV))
+swap_free=$((`cat /proc/meminfo | awk '/^SwapFree/ { print $2; }'`$UNITS_DIV))
+swap_total=$((`cat /proc/meminfo | awk '/^SwapTotal/ { print $2; }'`$UNITS_DIV))
+
+arc_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^size/ { print $3; }'`/1024$UNITS_DIV))
+arc_mfu_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mfu_size/ { print $3; }'`/1024$UNITS_DIV))
+arc_mfu_ghost_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mfu_ghost_size/ { print $3; }'`/1024$UNITS_DIV))
+arc_mru_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mru_size/ { print $3; }'`/1024$UNITS_DIV))
+arc_mru_ghost_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mru_ghost_size/ { print $3; }'`/1024$UNITS_DIV))
+
+slab_size=$((`cat /proc/meminfo | awk '/^Slab/ { print $2; }'`$UNITS_DIV))
+dcache_size=$((`cat /proc/meminfo | awk '/^Cached/ { print $2; }'`$UNITS_DIV))
+swapcache_size=$((`cat /proc/meminfo | awk '/^SwapCached/ { print $2; }'`$UNITS_DIV))
+buffers_size=$((`cat /proc/meminfo | awk '/^Buffers/ { print $2; }'`$UNITS_DIV))
 mem_free_no_cache=$(( $mem_free + $swapcache_size + $buffers_size))
 zfs_arc_shrink_shift=`cat /sys/module/zfs/parameters/zfs_arc_shrink_shift`
 zfs_arc_shrink_size=$(( $mem_total / (1<<$zfs_arc_shrink_shift) ))
 swap_used=$(( $swap_total - $swap_free ))
 
-printf "mem_total             %12s MB\n" $mem_total
-printf "slab_size             %12s MB\n" $slab_size
-printf "dcache_size           %12s MB\n" $dcache_size
-printf "swapcache_size        %12s MB\n" $swapcache_size
-printf "buffers_size          %12s MB\n" $buffers_size
-printf "arc_size              %12s MB\n" $arc_size
-printf "arc_mfu_size          %12s MB\n" $arc_mfu_size
-printf "arc_mfu_ghost_size    %12s MB\n" $arc_mfu_ghost_size
-printf "arc_mru_size          %12s MB\n" $arc_mru_size
-printf "arc_mru_ghost_size    %12s MB\n" $arc_mru_ghost_size
-printf "zfs_arc_shrink_size   %12s MB\n" $zfs_arc_shrink_size
-printf "mem_free              %12s MB\n" $mem_free
-printf "mem_free_no_cache     %12s MB\n" $mem_free_no_cache
-printf "mem_swap_free         %12s MB\n" $swap_free
-printf "mem_swap_used         %12s MB\n" $swap_used
+printf "mem_total             %12s $UNITS\n" $mem_total
+printf "slab_size             %12s $UNITS\n" $slab_size
+printf "dcache_size           %12s $UNITS\n" $dcache_size
+printf "swapcache_size        %12s $UNITS\n" $swapcache_size
+printf "buffers_size          %12s $UNITS\n" $buffers_size
+printf "arc_size              %12s $UNITS\n" $arc_size
+printf "arc_mfu_size          %12s $UNITS\n" $arc_mfu_size
+printf "arc_mfu_ghost_size    %12s $UNITS\n" $arc_mfu_ghost_size
+printf "arc_mru_size          %12s $UNITS\n" $arc_mru_size
+printf "arc_mru_ghost_size    %12s $UNITS\n" $arc_mru_ghost_size
+printf "zfs_arc_shrink_size   %12s $UNITS\n" $zfs_arc_shrink_size
+printf "mem_free              %12s $UNITS\n" $mem_free
+printf "mem_free_no_cache     %12s $UNITS\n" $mem_free_no_cache
+printf "mem_swap_free         %12s $UNITS\n" $swap_free
+printf "mem_swap_used         %12s $UNITS\n" $swap_used
 
