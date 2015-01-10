@@ -24,7 +24,7 @@ mem_free=$((`cat /proc/meminfo | awk '/^MemFree/ { print $2; }'`$UNITS_DIV))
 swap_free=$((`cat /proc/meminfo | awk '/^SwapFree/ { print $2; }'`$UNITS_DIV))
 swap_total=$((`cat /proc/meminfo | awk '/^SwapTotal/ { print $2; }'`$UNITS_DIV))
 
-arc_c=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^c\s/ { print $3; }'`/1024$UNITS_DIV))
+arc_c=$((`cat /proc/spl/kstat/zfs/arcstats | grep -P '^c\s' | awk '{ print $3; }'`/1024$UNITS_DIV))
 arc_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^size/ { print $3; }'`/1024$UNITS_DIV))
 arc_mfu_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mfu_size/ { print $3; }'`/1024$UNITS_DIV))
 arc_mfu_ghost_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mfu_ghost_size/ { print $3; }'`/1024$UNITS_DIV))
