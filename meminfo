@@ -24,6 +24,7 @@ mem_free=$((`cat /proc/meminfo | awk '/^MemFree/ { print $2; }'`$UNITS_DIV))
 swap_free=$((`cat /proc/meminfo | awk '/^SwapFree/ { print $2; }'`$UNITS_DIV))
 swap_total=$((`cat /proc/meminfo | awk '/^SwapTotal/ { print $2; }'`$UNITS_DIV))
 
+arc_c=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^c/ { print $3; }'`/1024$UNITS_DIV))
 arc_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^size/ { print $3; }'`/1024$UNITS_DIV))
 arc_mfu_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mfu_size/ { print $3; }'`/1024$UNITS_DIV))
 arc_mfu_ghost_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mfu_ghost_size/ { print $3; }'`/1024$UNITS_DIV))
@@ -44,6 +45,7 @@ printf "slab_size             %12s $UNITS\n" $slab_size
 printf "dcache_size           %12s $UNITS\n" $dcache_size
 printf "swapcache_size        %12s $UNITS\n" $swapcache_size
 printf "buffers_size          %12s $UNITS\n" $buffers_size
+printf "arc_c                 %12s $UNITS\n" $arc_c
 printf "arc_size              %12s $UNITS\n" $arc_size
 printf "arc_mfu_size          %12s $UNITS\n" $arc_mfu_size
 printf "arc_mfu_ghost_size    %12s $UNITS\n" $arc_mfu_ghost_size
