@@ -24,7 +24,7 @@ mem_free=$((`cat /proc/meminfo | awk '/^MemFree/ { print $2; }'`$UNITS_DIV))
 swap_free=$((`cat /proc/meminfo | awk '/^SwapFree/ { print $2; }'`$UNITS_DIV))
 swap_total=$((`cat /proc/meminfo | awk '/^SwapTotal/ { print $2; }'`$UNITS_DIV))
 
-arc_c=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^c/ { print $3; }'`/1024$UNITS_DIV))
+arc_c=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^c\s/ { print $3; }'`/1024$UNITS_DIV))
 arc_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^size/ { print $3; }'`/1024$UNITS_DIV))
 arc_mfu_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mfu_size/ { print $3; }'`/1024$UNITS_DIV))
 arc_mfu_ghost_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mfu_ghost_size/ { print $3; }'`/1024$UNITS_DIV))
@@ -41,19 +41,20 @@ zfs_arc_shrink_size=$(( $mem_total / (1<<$zfs_arc_shrink_shift) ))
 swap_used=$(( $swap_total - $swap_free ))
 
 printf "mem_total             %12s $UNITS\n" $mem_total
+printf "mem_free              %12s $UNITS\n" $mem_free
+printf "mem_free_no_cache     %12s $UNITS\n" $mem_free_no_cache
+printf "mem_swap_free         %12s $UNITS\n" $swap_free
+printf "mem_swap_used         %12s $UNITS\n" $swap_used
 printf "slab_size             %12s $UNITS\n" $slab_size
 printf "dcache_size           %12s $UNITS\n" $dcache_size
 printf "swapcache_size        %12s $UNITS\n" $swapcache_size
 printf "buffers_size          %12s $UNITS\n" $buffers_size
+printf "\n"
+printf "zfs_arc_shrink_size   %12s $UNITS\n" $zfs_arc_shrink_size
 printf "arc_c                 %12s $UNITS\n" $arc_c
 printf "arc_size              %12s $UNITS\n" $arc_size
 printf "arc_mfu_size          %12s $UNITS\n" $arc_mfu_size
 printf "arc_mfu_ghost_size    %12s $UNITS\n" $arc_mfu_ghost_size
 printf "arc_mru_size          %12s $UNITS\n" $arc_mru_size
 printf "arc_mru_ghost_size    %12s $UNITS\n" $arc_mru_ghost_size
-printf "zfs_arc_shrink_size   %12s $UNITS\n" $zfs_arc_shrink_size
-printf "mem_free              %12s $UNITS\n" $mem_free
-printf "mem_free_no_cache     %12s $UNITS\n" $mem_free_no_cache
-printf "mem_swap_free         %12s $UNITS\n" $swap_free
-printf "mem_swap_used         %12s $UNITS\n" $swap_used
 
