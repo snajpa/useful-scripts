@@ -38,7 +38,7 @@ swapcache_size=$((`cat /proc/meminfo | awk '/^SwapCached/ { print $2; }'`$UNITS_
 buffers_size=$((`cat /proc/meminfo | awk '/^Buffers/ { print $2; }'`$UNITS_DIV))
 mem_free_no_cache=$(( $mem_free + $swapcache_size + $buffers_size))
 swap_used=$(( $swap_total - $swap_free ))
-applications=$(( $mem_total - $(( $mem_free_no_cache + $dcache_size + $slab_size )) + $swap_used ))
+applications=$(( $mem_total - $(( $mem_free_no_cache + $dcache_size + $slab_size + $arc_size )) + $swap_used ))
 committed=$((`cat /proc/meminfo | awk '/^Committed_AS/ { print $2; }'`$UNITS_DIV))
 
 printf "mem_total             %12s $UNITS\n" $mem_total
