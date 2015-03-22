@@ -1,23 +1,26 @@
 #!/bin/bash
 
-case "$1" in
+UNITS_DIV="/1024"
+UNITS="MB"
+VERBOSE=false
 
--g)
-	UNITS_DIV="/1024/1024"
-	UNITS="GB"
-	;;
--m)
-	UNITS_DIV="/1024"
-	UNITS="MB"
-	;;
--k)
-	UNITS_DIV=""
-	UNITS="kB"
-	;;
-*)
-	UNITS_DIV="/1024"
-	UNITS="MB"
-esac
+while [ $# -gt 0 ]; do
+	case "$1" in
+	-g)
+		UNITS_DIV="/1024/1024"
+		UNITS="GB"
+		;;
+	-k)
+		UNITS_DIV=""
+		UNITS="kB"
+		;;
+	-v)
+		VERBOSE=true
+		;;	
+	esac
+
+	shift
+done
 
 mem_total=$((`cat /proc/meminfo | awk '/^MemTotal/ { print $2; }'`$UNITS_DIV))
 mem_free=$((`cat /proc/meminfo | awk '/^MemFree/ { print $2; }'`$UNITS_DIV))
@@ -34,6 +37,8 @@ arc_mru_ghost_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^mru_ghost_size/
 arc_meta_limit=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^arc_meta_limit/ { print $3; }'`/1024$UNITS_DIV))
 arc_meta_max=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^arc_meta_max/ { print $3; }'`/1024$UNITS_DIV))
 arc_meta_used=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^arc_meta_used/ { print $3; }'`/1024$UNITS_DIV))
+arc_hdr_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^hdr_size/ { print $3; }'`/1024$UNITS_DIV))
+arc_l2_hdr_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^l2_hdr_size/ { print $3; }'`/1024$UNITS_DIV))
 
 slab_size=$((`cat /proc/meminfo | awk '/^Slab/ { print $2; }'`$UNITS_DIV))
 dcache_size=$((`cat /proc/meminfo | awk '/^Cached/ { print $2; }'`$UNITS_DIV))
@@ -51,17 +56,26 @@ printf "mem_swap_used         %12s $UNITS\n" $swap_used
 printf "slab_size             %12s $UNITS\n" $slab_size
 printf "dcache_size           %12s $UNITS\n" $dcache_size
 printf "swapcache_size        %12s $UNITS\n" $swapcache_size
+$VERBOSE && \
 printf "buffers_size          %12s $UNITS\n" $buffers_size
+$VERBOSE && \
 printf "committed             %12s $UNITS\n" $committed
 printf "\n"
 printf "arc_c_max             %12s $UNITS\n" $arc_c_max
 printf "arc_c                 %12s $UNITS\n" $arc_c
 printf "arc_size              %12s $UNITS\n" $arc_size
+$VERBOSE && \
+printf "arc_hdr_size          %12s $UNITS\n" $arc_hdr_size
+$VERBOSE && \
+printf "arc_l2_hdr_size       %12s $UNITS\n" $arc_l2_hdr_size
 printf "arc_mfu_size          %12s $UNITS\n" $arc_mfu_size
+$VERBOSE && \
 printf "arc_mfu_ghost_size    %12s $UNITS\n" $arc_mfu_ghost_size
 printf "arc_mru_size          %12s $UNITS\n" $arc_mru_size
+$VERBOSE && \
 printf "arc_mru_ghost_size    %12s $UNITS\n" $arc_mru_ghost_size
 printf "arc_meta_limit        %12s $UNITS\n" $arc_meta_limit
-printf "arc_meta_max          %12s $UNITS\n" $arc_meta_max
 printf "arc_meta_used         %12s $UNITS\n" $arc_meta_used
+$VERBOSE && \
+printf "arc_meta_max          %12s $UNITS\n" $arc_meta_max
 
