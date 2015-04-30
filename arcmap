@@ -1,29 +1,35 @@
-#!/bin/bash
-POOL=${1:-vz}
+#!/usr/bin/env ruby
 
-if ! zpool status $POOL > /dev/null 2>&1; then
-	echo "Pool $POOL not found."
-	exit 1
-fi
+POOL = ARGV[0] ? ARGV[0] : 'vz'
 
-dsmap=$(mktemp)
+`zpool status #{POOL} > /dev/null 2>&1`
 
-zdb $POOL -d -P | awk '{printf "%s %s\n", $5, $2; }' | sed -e 's/,//' | sort > $dsmap
+unless $?.exitstatus == 0
+  puts "Pool #{POOL} not found."
+  exit 1
+end
 
-dbufstat.py -r | tail -n+2 | sort -k2n | while read line; do
-	set $line
-        lobjset=$objset;
-        objset=$2
-        size=$5
-        totsize=$((totsize + $size))
-        [ "$objset" != "$lobjset" ] && echo "$objset $totsize" && totsize=0
-done | while read line; do
-	set $line
-        objset=$1
-        totsize=$2
-        dsname=$(cat $dsmap | grep -P "^$objset " | awk '{print $2;}')
-        printf "%-50s %10sM\n" $dsname $(( $totsize / 1024 / 1024))
-done
+dsmap = {}
+arcmap = {}
 
-rm -f $dsmap
+IO.popen "zdb #{POOL}  -d -P", 'r' do |f|
+  f.gets
+  until f.eof? do
+    a = f.gets.gsub(/, /, ' ').strip.split(/\s+/)
+    dsmap[a[4].to_i] = a[1]
+  end
+end
 
+IO.popen 'dbufstat.py -r', 'r' do |f|
+  f.gets
+  until f.eof? do
+    a = f.gets.strip.split(/\s+/)
+    arcmap[a[1].to_i] ||= 0
+    arcmap[a[1].to_i] += a[4].to_i
+  end
+end
+
+dsmap.sort_by {|i, name| name }.each do |i,name|
+  arcmap[i] ||= 0
+  printf "%-50s %10sM\n", name, (arcmap[i] / 1024 / 1024).round
+end
