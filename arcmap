@@ -20,12 +20,15 @@ IO.popen "zdb #{POOL}  -d -P", 'r' do |f|
   end
 end
 
-IO.popen 'dbufstat.py -r', 'r' do |f|
-  f.gets
+File.open('/proc/spl/kstat/zfs/dbufs') do |f|
+  3.times do
+    f.gets
+  end
+
   until f.eof? do
     a = f.gets.strip.split(/\s+/)
     arcmap[a[1].to_i] ||= 0
-    arcmap[a[1].to_i] += a[4].to_i
+    arcmap[a[1].to_i] += a[6].to_i
   end
 end
 
