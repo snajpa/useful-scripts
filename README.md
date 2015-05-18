@@ -1,9 +1,9 @@
 useful-scipts
 =============
 
-arcmap: show amount of ARC by dataset
-meminfo: memory info on vpsfree zfs systems
-zfs-modprobe-conf: /etc/modprobe.d/zfs.conf generator for vpsfree systems
+- arcmap: show amount of ARC by dataset
+- meminfo: memory info on vpsfree zfs systems
+- zfs-modprobe-conf: /etc/modprobe.d/zfs.conf generator for vpsfree systems
 
 Examples of use:
 
