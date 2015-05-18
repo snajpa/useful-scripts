@@ -1,0 +1,24 @@
+#!/bin/bash
+
+totalmem=$(($(cat /proc/meminfo | awk '/MemTotal/{ print $2 }') / 1024 / 1024 + 1 ))
+totalswap=$(($(cat /proc/meminfo | awk '/SwapTotal/{ print $2 }') / 1024 / 1024 + 1 ))
+
+arc=$(( $totalmem / 4 *1024*1024*1024 ))
+meta=$(( $arc / 4 ))
+dirty_sync=$(( 512 *1024*1024 ))
+
+echo "# Optimal settings for $totalmem G RAM"
+echo "#     zfs_arc_max = $(( $arc /1024/1024 )) M"
+echo "#     zfs_arc_meta_limit = $(( $meta /1024/1024 )) M"
+echo "#     zfs_arc_meta_prune = 256000"
+echo "#     zfs_txg_history = 15"
+echo "#     zfs_txg_timeout = 10"
+echo "#     zfs_dirty_data_sync = $(( $dirty_sync /1024/1024 )) M"
+echo "#     "
+echo "options zfs \\"
+echo "    zfs_arc_max=$arc \\"
+echo "    zfs_arc_meta_limit=$meta \\"
+echo "    zfs_arc_meta_prune=256000 \\"
+echo "    zfs_txg_history=15 \\"
+echo "    zfs_txg_timeout=10 \\"
+echo "    zfs_dirty_data_sync=$dirty_sync"
