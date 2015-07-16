@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+
+require 'sinatra'
+require 'json'
+
+period = 5
+set :port, 9000
+set :bind, '0.0.0.0'
+
+Thread.abort_on_exception = true
+
+data = {}
+datamtx = Mutex.new
+
+EXP2COLS = /^([[:graph:]]*)\:\s+([[:graph:]]*).*$/
+EXP3COLS = /^([[:graph:]]*)\s+([[:graph:]]*)\s+([[:graph:]]*).*$/
+
+datathr = Thread.new do
+  while true do
+    meminfo = {}
+    File.open('/proc/meminfo').each_line do |l|
+      name, value = l.match(EXP2COLS).captures
+      meminfo[name.to_sym] = value.to_i
+    end
+
+    arcstats = {}
+    arcstatsfd = open('/proc/spl/kstat/zfs/arcstats')
+    arcstatsfd.gets
+    arcstatsfd.gets
+    arcstatsfd.each_line do |l|
+      name, length, value = l.match(EXP3COLS).captures
+      arcstats[name.to_sym] = value.to_i
+    end
+
+    lavg1m, lavg5m, lavg15m = File.open('/proc/loadavg').gets.match(EXP3COLS).captures
+
+    datamtx.synchronize do
+      data = {}
+      data[:loadavg] = [ lavg1m, lavg5m, lavg15m ]
+      data[:meminfo] = meminfo.clone
+      data[:arcstats] = arcstats.clone
+    end
+
+    sleep period
+  end
+end
+
+get '/' do
+  datacopy = {}
+  datamtx.synchronize do
+    datacopy = data.clone
+  end
+
+  JSON.pretty_generate datacopy
+end
+
+# vim: ai ts=2 sts=2 et sw=2 ft=ruby
