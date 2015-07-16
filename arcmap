@@ -15,6 +15,7 @@ arcmap = {}
 STDERR.puts "zdb #{POOL} -d -P"
 IO.popen "zdb #{POOL} -d -P", 'r' do |f|
   f.gets
+  STDERR.puts "parsing zdb"
   until f.eof? do
     a = f.gets.gsub(/, /, ' ').strip.split(/\s+/)
     dsmap[a[4].to_i] = a[1]
