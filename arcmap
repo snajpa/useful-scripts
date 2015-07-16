@@ -5,14 +5,15 @@ POOL = ARGV[0] ? ARGV[0] : 'vz'
 `zpool status #{POOL} > /dev/null 2>&1`
 
 unless $?.exitstatus == 0
-  puts "Pool #{POOL} not found."
+  STDERR.puts "Pool #{POOL} not found."
   exit 1
 end
 
 dsmap = {}
 arcmap = {}
 
-IO.popen "zdb #{POOL}  -d -P", 'r' do |f|
+STDERR.puts "zdb #{POOL} -d -P"
+IO.popen "zdb #{POOL} -d -P", 'r' do |f|
   f.gets
   until f.eof? do
     a = f.gets.gsub(/, /, ' ').strip.split(/\s+/)
@@ -20,6 +21,7 @@ IO.popen "zdb #{POOL}  -d -P", 'r' do |f|
   end
 end
 
+STDERR.puts "parsing /proc/spl/kstat/zfs/dbufs"
 File.open('/proc/spl/kstat/zfs/dbufs') do |f|
   3.times do
     f.gets
@@ -32,6 +34,7 @@ File.open('/proc/spl/kstat/zfs/dbufs') do |f|
   end
 end
 
+STDERR.puts "mapping dbufs to datasets"
 dsmap.sort_by {|i, name| name }.each do |i,name|
   arcmap[i] ||= 0
   printf "%-50s %10sM\n", name, (arcmap[i] / 1024 / 1024).round
