@@ -1,0 +1,19 @@
+#!/bin/bash
+
+read -p "Node: " node
+read -p "Location: " loc
+read -s -p "Password: " pw
+
+re='^[0-9]+$'
+if [[ $node =~ $re ]] ; then
+   node="node${node}"
+fi
+
+echo ""
+echo ""
+echo "Running impiconsole, host: ${node}-mgmt.${loc}.vpsfree.cz"
+echo "Escape char is backtick (\`). Use \`. to quit"
+echo ""
+
+
+ipmiconsole --escape-char='`' -h ${node}-mgmt.${loc}.vpsfree.cz -u ADMIN -p ${pw}

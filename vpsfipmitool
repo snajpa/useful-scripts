@@ -1,0 +1,22 @@
+#!/bin/bash
+
+read -p "Node: " node
+read -p "Location: " loc
+read -s -p "Password: " pw
+
+re='^[0-9]+$'
+if [[ $node =~ $re ]] ; then
+   node="node${node}"
+fi
+
+echo ""
+echo ""
+echo "Will run 'ipmitool -H ${node}-mgmt.${loc}.vpsfree.cz -U ADMIN -P <pw> $*'"
+read -p "Is this correct? [y/N]: " correct
+
+if [ ! "x${correct}" == "xy" ]; then
+    echo "Exiting"
+    exit 1
+fi
+
+ipmitool -H ${node}-mgmt.${loc}.vpsfree.cz -U ADMIN -P ${pw} $*
