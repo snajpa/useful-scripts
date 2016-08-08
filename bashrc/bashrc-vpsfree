@@ -15,7 +15,7 @@ function send-my-pubkey {
 }
 
 function delssh {
-	sed -i "$1d" /home/snajpa/.ssh/known_hosts
+	sed -i "$1d" ~/.ssh/known_hosts
 }
 
 function uptime-vpsfree {
