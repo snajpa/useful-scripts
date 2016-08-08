@@ -1,0 +1,111 @@
+#!/bin/bash
+# vim:sw=4:ts=4:et:
+function sshfs-reconnect {
+	sshfs -o reconnect,ConnectTimeout=3 $1 $2
+}
+
+export VPSFREE_NODES=$(cat ~/.bashrc-cache-nodes 2> /dev/null)
+
+function cssh-vpsfree {
+	cssh `for node in $VPSFREE_NODES; do echo -n "root@$node "; done`
+}
+
+function send-my-pubkey {
+	ssh $1 "mkdir .ssh; chmod 700 .ssh; echo "" >> .ssh/authorized_keys; echo `cat ~/.ssh/id_dsa.pub` >> .ssh/authorized_keys; echo `cat ~/.ssh/id_rsa.pub` >> .ssh/authorized_keys; chmod 600 .ssh/authorized_keys; restorecon -FvvR \~"
+}
+
+function delssh {
+	sed -i "$1d" /home/snajpa/.ssh/known_hosts
+}
+
+function uptime-vpsfree {
+	for node in $VPSFREE_NODES; do echo -en "$node: "; ssh -o ConnectTimeout=2 $node uptime; done;
+}
+
+
+is_ip() {
+    IP="$1"
+    python - "${IP}" <<EOF
+import socket
+import sys 
+# Check IPv6
+if socket.has_ipv6:
+    try:
+        socket.inet_pton(socket.AF_INET6, sys.argv[1])
+        sys.exit(0)
+    except socket.error:
+        pass
+# Check IPv4
+try:
+    socket.inet_pton(socket.AF_INET, sys.argv[1])
+    sys.exit(0)
+except socket.error:
+    sys.exit(1)
+EOF
+    return $?
+}
+ 
+try_connect_ssh() {
+# If only one argument is supplied and $1 resolves into a hostname,
+# connect there using ssh 
+	CMD=ssh
+	HOST=$(echo $1 | awk '{ print $1; }')
+	if [ "`echo $HOST | grep -P '^.+#.+$'`" != "" ]; then
+		CMD=$(echo $HOST | sed 's/#.*$//g')
+		HOST=$(echo $HOST | sed 's/^.*#//g')
+	fi
+    shift
+		
+    case "$CMD" in
+    ssh)
+        RESOLVES=$(host -N 2 -W 2 $HOST 2>/dev/null | grep -v NXDOMAIN)
+        if [ -z "${RESOLVES}" ]; then
+            if is_ip "$1"; then
+                RESOLVES="$1"
+            fi  
+        fi  
+        if [ $? -eq 0 -a -n "${RESOLVES}" ]; then
+        	ssh $HOST $@
+            return 0
+        fi  
+        ;;
+
+    i | ipmi)
+        node=$(echo $HOST | sed 's/\..*$//g')
+        loc=$(echo $HOST | sed "s/^$node//g")
+        read -s -p "Password: " pw
+        echo "Running impiconsole, host: ${node}-mgmt${loc}"
+        echo "Escape char is backtick (\`). Use \`. to quit"
+        ipmiconsole --escape-char='`' -h $node-mgmt$loc -u ADMIN -p $pw $@
+        return 0
+        ;;
+
+    e | enter)
+        lookup=$(cat ~/.bashrc-cache-vps | awk "\$1 == $HOST { print \$0; }")
+        set $lookup
+        echo Enter VPS $1 at $2
+        ssh $2 -t vzctl enter $1
+        return 0
+        ;;
+        
+    esac
+
+    echo "co prosim"
+
+    return 1
+}
+ 
+command_not_found_handle() {
+    try_connect_ssh "$@"
+    return $?
+}   
+
+bashrc-makecache() {
+    echo -n "Cache node list... "
+    vpsfreectl node list -H -o domain_name > ~/.bashrc-cache-nodes
+    echo $(cat ~/.bashrc-cache-nodes | wc -l) found;
+    echo -n "Cache VPS list... "
+    vpsfreectl vps list -H -o id,node.domain_name > ~/.bashrc-cache-vps
+    echo $(cat ~/.bashrc-cache-vps | wc -l) found;
+}
+
