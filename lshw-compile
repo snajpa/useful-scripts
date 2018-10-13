@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+NODES="node1.prg
+	node2.prg
+	node3.prg
+	node4.prg
+	node5.prg
+	node6.prg
+	node7.prg
+	node8.prg
+	node9.prg
+	node10.prg
+	node11.prg
+	node12.prg
+	node13.prg
+	node14.prg
+	node15.prg
+	node16.prg
+	node17.prg
+	node18.prg
+	node1.brq
+	node2.brq
+	node3.brq
+	node4.brq
+	node1.pgnd
+	backuper.prg
+	nasbox.prg"
+
+sshdo(){
+	node=$1
+	shift
+	ssh root@$node $*
+}
+
+OUT=./tmp-output
+
+> $OUT
+
+echo "<page>information:infrastructure</page>" >> $OUT
+echo "====== Infrastruktura vpsFree.cz ======" >> $OUT
+
+for node in $NODES; do
+	sshdo $node yum install -y lshw -q;
+	sshdo $node lshw -sanitize -short > tmp-lshw-$node;
+	if [ "$?" == "0" ]; then
+		echo "===== $node =====" >> $OUT
+		echo "<code>" >> $OUT
+		cat tmp-lshw-$node | grep -v generic | grep -v volume | grep -v bridge | grep -v bus >> $OUT
+		echo "</code>" >> $OUT
+		echo "" >> $OUT
+	fi;
+done
+
