@@ -39,7 +39,8 @@ arc_meta_max=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^arc_meta_max/ { print
 arc_meta_used=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^arc_meta_used/ { print $3; }'`/1024$UNITS_DIV))
 arc_hdr_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^hdr_size/ { print $3; }'`/1024$UNITS_DIV))
 arc_l2_hdr_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^l2_hdr_size/ { print $3; }'`/1024$UNITS_DIV))
-
+arc_dnode_limit=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^arc_dnode_limit/ { print $3; }'`/1024$UNITS_DIV))
+dnode_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^dnode_size/ { print $3; }'`/1024$UNITS_DIV))
 slab_size=$((`cat /proc/meminfo | awk '/^Slab/ { print $2; }'`$UNITS_DIV))
 dcache_size=$((`cat /proc/meminfo | awk '/^Cached/ { print $2; }'`$UNITS_DIV))
 swapcache_size=$((`cat /proc/meminfo | awk '/^SwapCached/ { print $2; }'`$UNITS_DIV))
@@ -78,4 +79,7 @@ printf "arc_meta_limit        %12s $UNITS\n" $arc_meta_limit
 printf "arc_meta_used         %12s $UNITS\n" $arc_meta_used
 $VERBOSE && \
 printf "arc_meta_max          %12s $UNITS\n" $arc_meta_max
-
+$VERBOSE && \
+printf "arc_dnode_limit       %12s $UNITS\n" $arc_dnode_limit
+$VERBOSE && \
+printf "dnode_size            %12s $UNITS\n" $dnode_size
