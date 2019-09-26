@@ -27,6 +27,7 @@ mem_free=$((`cat /proc/meminfo | awk '/^MemFree/ { print $2; }'`$UNITS_DIV))
 swap_free=$((`cat /proc/meminfo | awk '/^SwapFree/ { print $2; }'`$UNITS_DIV))
 swap_total=$((`cat /proc/meminfo | awk '/^SwapTotal/ { print $2; }'`$UNITS_DIV))
 
+if [ -f /proc/spl/kstat/zfs/arcstats ]; then
 arc_c_max=$((`cat /proc/spl/kstat/zfs/arcstats | grep -P '^c_max' | awk '{ print $3; }'`/1024$UNITS_DIV))
 arc_c=$((`cat /proc/spl/kstat/zfs/arcstats | grep -P '^c\s' | awk '{ print $3; }'`/1024$UNITS_DIV))
 arc_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^size/ { print $3; }'`/1024$UNITS_DIV))
@@ -41,6 +42,7 @@ arc_hdr_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^hdr_size/ { print $3;
 arc_l2_hdr_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^l2_hdr_size/ { print $3; }'`/1024$UNITS_DIV))
 arc_dnode_limit=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^arc_dnode_limit/ { print $3; }'`/1024$UNITS_DIV))
 dnode_size=$((`cat /proc/spl/kstat/zfs/arcstats | awk '/^dnode_size/ { print $3; }'`/1024$UNITS_DIV))
+fi;
 slab_size=$((`cat /proc/meminfo | awk '/^Slab/ { print $2; }'`$UNITS_DIV))
 pagecache_size=$((`cat /proc/meminfo | awk '/^Cached/ { print $2; }'`$UNITS_DIV))
 swapcache_size=$((`cat /proc/meminfo | awk '/^SwapCached/ { print $2; }'`$UNITS_DIV))
@@ -49,18 +51,29 @@ mem_free_no_cache=$(( $mem_free + $swapcache_size + $buffers_size))
 swap_used=$(( $swap_total - $swap_free ))
 committed=$((`cat /proc/meminfo | awk '/^Committed_AS/ { print $2; }'`$UNITS_DIV))
 
+slab_line_size() {
+	echo $(($2 * $5))
+}
+inode_cache=$(( $(slab_line_size `cat /proc/slabinfo | grep -P "^inode_cache\s"`) $UNITS_DIV))
+dentry_cache=$(( $(slab_line_size `cat /proc/slabinfo | grep -P "^dentry\s"`) $UNITS_DIV))
 printf "mem_total             %12s $UNITS\n" $mem_total
 printf "mem_free              %12s $UNITS\n" $mem_free
+$VERBOSE && \
 printf "mem_free_no_cache     %12s $UNITS\n" $mem_free_no_cache
 printf "mem_swap_free         %12s $UNITS\n" $swap_free
 printf "mem_swap_used         %12s $UNITS\n" $swap_used
 printf "slab_size             %12s $UNITS\n" $slab_size
-printf "pagecache_size           %12s $UNITS\n" $pagecache_size
+$VERBOSE && \
+printf "dentry_cache          %12s $UNITS\n" $dentry_cache
+$VERBOSE && \
+printf "inode_cache           %12s $UNITS\n" $inode_cache
+printf "pagecache_size        %12s $UNITS\n" $pagecache_size
 printf "swapcache_size        %12s $UNITS\n" $swapcache_size
 $VERBOSE && \
 printf "buffers_size          %12s $UNITS\n" $buffers_size
 $VERBOSE && \
 printf "committed             %12s $UNITS\n" $committed
+if [ -f /proc/spl/kstat/zfs/arcstats ]; then
 printf "\n"
 printf "arc_c_max             %12s $UNITS\n" $arc_c_max
 printf "arc_c                 %12s $UNITS\n" $arc_c
@@ -83,3 +96,4 @@ $VERBOSE && \
 printf "arc_dnode_limit       %12s $UNITS\n" $arc_dnode_limit
 $VERBOSE && \
 printf "dnode_size            %12s $UNITS\n" $dnode_size
+fi;
