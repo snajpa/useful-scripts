@@ -52,10 +52,10 @@ swap_used=$(( $swap_total - $swap_free ))
 committed=$((`cat /proc/meminfo | awk '/^Committed_AS/ { print $2; }'`$UNITS_DIV))
 
 slab_line_size() {
-	echo $(($2 * $5))
+	echo $(($2 * $4))
 }
-inode_cache=$(( $(slab_line_size `cat /proc/slabinfo | grep -P "^inode_cache\s"`) $UNITS_DIV))
-dentry_cache=$(( $(slab_line_size `cat /proc/slabinfo | grep -P "^dentry\s"`) $UNITS_DIV))
+inode_cache=$(( $(slab_line_size `cat /proc/slabinfo | grep -P "^inode_cache\s"`) /1024$UNITS_DIV))
+dentry_cache=$(( $(slab_line_size `cat /proc/slabinfo | grep -P "^dentry\s"`) /1024$UNITS_DIV))
 printf "mem_total             %12s $UNITS\n" $mem_total
 printf "mem_free              %12s $UNITS\n" $mem_free
 $VERBOSE && \
